@@ -185,53 +185,12 @@
       color:#fff;
       cursor:pointer;
     }
-
-    /* 원고 생성 로딩 이퀄라이저 */
-    .generation-loader {
-      margin-top: 10px;
-      padding: 8px 10px;
-      border-radius: 12px;
-      border: 1px solid var(--border);
-      background:#f9fafb;
-      display:flex;
-      align-items:center;
-      gap:10px;
-    }
-    .generation-loader-text {
-      font-size: 13px;
-      color:#111827;
-      font-weight: 600;
-    }
-    .eq-bars {
-      display:flex;
-      align-items:flex-end;
-      gap:4px;
-      height:18px;
-    }
-    .eq-bar {
-      width:4px;
-      height:100%;
-      background:#4f46e5;
-      border-radius:999px;
-      transform-origin:bottom;
-      animation:eq-bounce 1s infinite ease-in-out;
-    }
-    .eq-bar:nth-child(2) { animation-delay: 0.1s; }
-    .eq-bar:nth-child(3) { animation-delay: 0.2s; }
-    .eq-bar:nth-child(4) { animation-delay: 0.3s; }
-    .eq-bar:nth-child(5) { animation-delay: 0.4s; }
-
-    @keyframes eq-bounce {
-      0%, 100% { transform: scaleY(0.4); opacity: 0.6; }
-      50% { transform: scaleY(1.3); opacity: 1; }
-    }
   </style>
 </head>
 <body>
   <div class="wrap">
     <div class="header">
-      <h1>이케아 URL 수집 → 이미지/정보 저장 → 원고(HTML) 자동 생성</h1>
-      <p>로컬 폴더에 저장됩니다. 모델은 <strong>Gemini 2.5</strong>만 허용됩니다.</p>
+      <h1>IKEA(이케아) 전용 원고 생성기</h1>
       <div style="margin-top:10px; display:flex; justify-content:center;">
         <button class="btn btn-ghost" id="helpBtn">❓ 사용방법 보기</button>
       </div>
@@ -298,16 +257,6 @@ https://www.ikea.com/kr/ko/p/agam-junior-chair-light-beige-yellow-20601369/"></t
           <button class="btn btn-ghost" id="clearLogBtn">🧹 로그 비우기</button>
           <button class="btn btn-ghost" id="copyLogBtn">📋 로그 복사</button>
         </div>
-        <div id="loadingEq" class="generation-loader" style="display:none;">
-          <div class="eq-bars" aria-hidden="true">
-            <div class="eq-bar"></div>
-            <div class="eq-bar"></div>
-            <div class="eq-bar"></div>
-            <div class="eq-bar"></div>
-            <div class="eq-bar"></div>
-          </div>
-          <div class="generation-loader-text">원고 생성 중입니다... 잠시만 기다려 주세요.</div>
-        </div>
         <textarea id="logBox" class="log mono" readonly></textarea>
       </details>
 
@@ -354,7 +303,6 @@ https://www.ikea.com/kr/ko/p/agam-junior-chair-light-beige-yellow-20601369/"></t
   const kpiDoneEl  = el('kpiDone');
   const kpiFailEl  = el('kpiFail');
   const configStateEl = el('configState');
-  const loadingEqEl = el('loadingEq');
 
   let selectedDirectoryHandle = null;
   let shouldStop = false;
@@ -375,13 +323,6 @@ https://www.ikea.com/kr/ko/p/agam-junior-chair-light-beige-yellow-20601369/"></t
   }
   function setStep(label) {
     stepLabelEl.textContent = label;
-  }
-
-  function showGenerationLoading() {
-    if (loadingEqEl) loadingEqEl.style.display = 'flex';
-  }
-  function hideGenerationLoading() {
-    if (loadingEqEl) loadingEqEl.style.display = 'none';
   }
 
   function sanitizeFileName(name) {
@@ -1010,7 +951,6 @@ URL: ${url}
         setStep('원고 생성(Gemini)');
         setProgress(basePct + 65);
         setStatus(`[${i+1}/${urls.length}] 원고 생성 중\n제품: ${info.productName}\n저장된 이미지: ${imageFileNames.length}장`, 'warn');
-        showGenerationLoading();
 
         const htmlDraft = await callGeminiGenerateHtml({
           apiKey,
@@ -1029,20 +969,17 @@ URL: ${url}
         kpiDoneEl.textContent = String(done);
         setStatus(`✅ 완료\n제품: ${info.productName}\n폴더: ${productDir.name}\nHTML: ${htmlFileName}`, 'ok');
         log(`완료: ${info.productName} (폴더=${productDir.name})`);
-        hideGenerationLoading();
       } catch (e) {
         fail += 1;
         kpiFailEl.textContent = String(fail);
         setStatus(`❌ 실패\nURL: ${url}\n오류: ${e.message}`, 'err');
         log(`실패: ${url} - ${e.message}`);
-        hideGenerationLoading();
       }
 
       setProgress(((i+1)/urls.length) * 100);
     }
 
     setStep('완료');
-    hideGenerationLoading();
     el('runBtn').disabled = false;
     el('stopBtn').disabled = true;
 
